@@ -15,7 +15,7 @@ import { z } from 'zod';
 import { buildSessionCookie, buildMockSession, SESSION_COOKIE } from '@/lib/auth/session';
 
 const SetSessionSchema = z.object({
-  role: z.enum(['viewer', 'editor', 'publisher', 'admin']),
+  role: z.enum(['viewer', 'editor', 'publisher']),
 });
 
 export async function POST(request: NextRequest) {
