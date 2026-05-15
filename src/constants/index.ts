@@ -63,7 +63,7 @@ export const SECTION_TYPES = [
 
 // ─── RBAC ─────────────────────────────────────────────────────────────────────
 
-export const ROLES = ['viewer', 'editor', 'publisher', 'admin'] as const;
+export const ROLES = ['viewer', 'editor', 'publisher'] as const;
 
 // ─── UI ───────────────────────────────────────────────────────────────────────
 

@@ -212,7 +212,7 @@ const FEATURES = [
   {
     title: 'Role-Based Access',
     description:
-      'Viewers, editors, publishers, and admins — each with clearly defined permissions. Secure by default.',
+      'Viewers, editors, and publishers each with clearly defined permissions. Secure by default.',
     icon: (
       <svg
         aria-hidden="true"
@@ -278,7 +278,7 @@ const STEPS = [
   {
     title: 'Choose a role',
     description:
-      'Sign in as an editor, publisher, or admin. Each role has clearly defined permissions tailored to your workflow.',
+      'Sign in as an editor, or publisher. Each role has clearly defined permissions tailored to your workflow.',
   },
   {
     title: 'Edit your page',

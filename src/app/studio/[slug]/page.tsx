@@ -22,7 +22,7 @@ export async function generateMetadata({
 
 export default async function StudioSlugPage({ params }: StudioSlugPageProps) {
   // ── Server-side auth check ───────────────────────────────────────────────
-  // All authenticated roles (viewer, editor, publisher, admin) can access the
+  // All authenticated roles (viewer, editor, publisher) can access the
   // studio. Viewers see a read-only view; editors and above can edit.
   // Redirects to /auth/login if no session exists.
   await requirePermission('page:read');

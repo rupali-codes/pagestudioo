@@ -100,7 +100,7 @@ export function getRoleFromCookie(request: NextRequest): Role | null {
     const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
     const session = JSON.parse(json) as Partial<Session>;
     const role = session.role;
-    if (!role || !['viewer', 'editor', 'publisher', 'admin'].includes(role)) {
+    if (!role || !['viewer', 'editor', 'publisher'].includes(role)) {
       return null;
     }
     return role as Role;

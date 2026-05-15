@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   const parsed = SetSessionSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Invalid role', valid: ['viewer', 'editor', 'publisher', 'admin'] },
+      { error: 'Invalid role', valid: ['viewer', 'editor', 'publisher'] },
       { status: 422 },
     );
   }

@@ -119,13 +119,11 @@ export function buildMockSession(role: Role): Session {
     viewer:    'mock-viewer',
     editor:    'mock-editor',
     publisher: 'mock-publisher',
-    admin:     'mock-admin',
   };
   const names: Record<Role, string> = {
     viewer:    'Alice Viewer',
     editor:    'Bob Editor',
     publisher: 'Carol Publisher',
-    admin:     'Dave Admin',
   };
   return { userId: ids[role], role, name: names[role] };
 }

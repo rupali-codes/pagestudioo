@@ -42,7 +42,7 @@ export const DEMO_PAGE: Page = {
             id: 'f2',
             icon: '🔒',
             title: 'Role-based access',
-            description: 'Viewers, editors, publishers, and admins.',
+            description: 'Viewers, editors and publishers.',
           },
           {
             id: 'f3',

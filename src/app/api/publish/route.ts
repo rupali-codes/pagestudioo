@@ -1,7 +1,7 @@
 /**
  * POST /api/publish — create an immutable versioned release.
  *
- * Protected: requires 'page:publish' permission (publisher or admin).
+ * Protected: requires 'page:publish' permission (publisher).
  *
  * Request body: { page: Page }
  *
