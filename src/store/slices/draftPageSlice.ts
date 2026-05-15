@@ -192,7 +192,6 @@ const draftPageSlice = createSlice({
     /** Mark the draft as clean (called after a successful save/publish). */
     markClean(state) {
       state.isDirty = false;
-      if (state.present) state.original = state.present;
     },
 
     /** Discard all edits and revert to the original CMS snapshot. */

@@ -4,6 +4,7 @@ import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import {
   selectDraftIsDirty,
   selectDraftIsSaving,
+  selectDraftHasChanges,
   selectIsPublishing,
   selectPublishError,
   selectLastPublishedRelease,
@@ -31,6 +32,7 @@ export function StudioToolbar({ pageTitle }: StudioToolbarProps) {
   const user = useAppSelector(selectUser);
   const draft = useAppSelector(selectDraft);
   const isDirty = useAppSelector(selectDraftIsDirty);
+  const hasChanges = useAppSelector(selectDraftHasChanges);
   const isSaving = useAppSelector(selectDraftIsSaving);
   const isPublishing = useAppSelector(selectIsPublishing);
   const publishError = useAppSelector(selectPublishError);
@@ -138,7 +140,7 @@ export function StudioToolbar({ pageTitle }: StudioToolbarProps) {
             variant="primary"
             size="sm"
             onClick={publish}
-            disabled={!isDirty || isPublishing || !draft}
+            disabled={!hasChanges || isPublishing || !draft}
             aria-busy={isPublishing}
             aria-label="Publish page"
             className={cn(isPublishing && 'cursor-wait')}

@@ -22,6 +22,15 @@ export const selectDraftIsSaving = (state: RootState) =>
   state.draftPage.isSaving;
 export const selectDraftError = (state: RootState) => state.draftPage.error;
 
+/** True when the draft diverges from the published version (even if saved). */
+export const selectDraftHasChanges = (state: RootState) => {
+  if (!state.draftPage.present || !state.draftPage.original) return false;
+  return (
+    JSON.stringify(state.draftPage.present) !==
+    JSON.stringify(state.draftPage.original)
+  );
+};
+
 /** Find a single section in the draft by ID */
 export const selectDraftSectionById =
   (sectionId: string) =>

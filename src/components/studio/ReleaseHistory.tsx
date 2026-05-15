@@ -18,6 +18,7 @@ import { selectReleases, selectDraft } from '@/store/selectors';
 import { useReleaseHistory } from '@/hooks/useReleaseHistory';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/cn';
+import { getSectionDisplayName } from '@/registry/sectionRegistry';
 import type { PageRelease, ChangelogEntry } from '@/types/page';
 
 // ─── Bump type badge colours ──────────────────────────────────────────────────
@@ -40,6 +41,7 @@ export function ReleaseHistory() {
   const draft = useAppSelector(selectDraft);
   const releases = useAppSelector(selectReleases);
   const slug = draft?.slug ?? '';
+  const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
 
   // Load history from server on mount
   const { isLoading, error } = useReleaseHistory(slug);
@@ -49,6 +51,10 @@ export function ReleaseHistory() {
     (a, b) =>
       new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
   );
+
+  function handleSelect(releaseId: string) {
+    setSelectedReleaseId((prev) => (prev === releaseId ? null : releaseId));
+  }
 
   return (
     <section aria-label="Release history" className="flex h-full flex-col">
@@ -89,6 +95,8 @@ export function ReleaseHistory() {
                 key={release.releaseId}
                 release={release}
                 isLatest={i === 0}
+                isSelected={selectedReleaseId === release.releaseId}
+                onSelect={() => handleSelect(release.releaseId)}
               />
             ))}
           </ul>
@@ -103,17 +111,34 @@ export function ReleaseHistory() {
 interface ReleaseItemProps {
   release: PageRelease;
   isLatest: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
 }
 
-function ReleaseItem({ release, isLatest }: ReleaseItemProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+function ReleaseItem({ release, isLatest, isSelected, onSelect }: ReleaseItemProps) {
   const hasChangelog = release.changelog && release.changelog.length > 0;
 
   // Derive bump type from the highest-severity changelog entry
   const bumpType = deriveBumpType(release.changelog ?? []);
 
   return (
-    <li className="px-4 py-3">
+    <li
+      className={cn(
+        'px-4 py-3 cursor-pointer transition-colors',
+        isSelected ? 'bg-blue-50' : 'hover:bg-gray-50',
+      )}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-expanded={isSelected}
+      aria-label={`Version ${release.version} published ${formatRelativeTime(release.publishedAt)}`}
+    >
       {/* Version row */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
@@ -143,47 +168,56 @@ function ReleaseItem({ release, isLatest }: ReleaseItemProps) {
         by {release.publishedBy}
       </p>
 
-      {/* Changelog toggle */}
-      {hasChangelog && (
-        <div className="mt-2">
-          <button
-            type="button"
-            onClick={() => setIsExpanded((v) => !v)}
-            aria-expanded={isExpanded}
-            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
-          >
-            <svg
-              aria-hidden="true"
-              className={cn('h-3 w-3 transition-transform', isExpanded && 'rotate-90')}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
-            {release.changelog.length} change{release.changelog.length !== 1 ? 's' : ''}
-          </button>
-
-          {isExpanded && (
-            <ul
-              className="mt-2 space-y-1"
-              aria-label={`Changelog for v${release.version}`}
-            >
-              {release.changelog.map((entry, i) => (
-                <li key={i} className="flex items-start gap-1.5">
-                  <span
-                    className={cn(
-                      'mt-0.5 shrink-0 text-[10px] font-semibold uppercase',
-                      SEVERITY_COLOUR[entry.severity],
-                    )}
-                  >
-                    {entry.severity.slice(0, 3)}
-                  </span>
-                  <span className="text-xs text-gray-600">{entry.message}</span>
+      {/* Expanded: sections + changelog */}
+      {isSelected && (
+        <div className="mt-3 space-y-3 border-t border-gray-200 pt-3">
+          {/* Sections list */}
+          <div>
+            <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+              Sections ({release.sections.length})
+            </h3>
+            <ul className="space-y-1" aria-label={`Sections in v${release.version}`}>
+              {release.sections.map((section) => (
+                <li
+                  key={section.id}
+                  className="rounded border border-gray-100 bg-white px-2 py-1.5"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="default" className="text-[10px]">
+                      {getSectionDisplayName(section.type)}
+                    </Badge>
+                    <span className="truncate text-xs text-gray-500" title={section.id}>
+                      {section.id.slice(0, 8)}…
+                    </span>
+                  </div>
+                  <PropsPreview props={section.props} />
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Changelog */}
+          {hasChangelog && (
+            <div>
+              <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                Changes
+              </h3>
+              <ul className="space-y-1" aria-label={`Changelog for v${release.version}`}>
+                {release.changelog.map((entry, i) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span
+                      className={cn(
+                        'mt-0.5 shrink-0 text-[10px] font-semibold uppercase',
+                        SEVERITY_COLOUR[entry.severity],
+                      )}
+                    >
+                      {entry.severity.slice(0, 3)}
+                    </span>
+                    <span className="text-xs text-gray-600">{entry.message}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       )}
@@ -213,4 +247,27 @@ function formatRelativeTime(iso: string): string {
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
   return new Date(iso).toLocaleDateString();
+}
+
+// ─── Props preview ─────────────────────────────────────────────────────────────
+
+const PREVIEW_KEYS = ['title', 'heading', 'subheading', 'body', 'name', 'description'] as const;
+
+function PropsPreview({ props }: { props: Record<string, unknown> }) {
+  const previewEntries = PREVIEW_KEYS
+    .filter((k) => typeof props[k] === 'string' && props[k] !== '')
+    .map((k) => [k, props[k] as string]);
+
+  if (previewEntries.length === 0) return null;
+
+  return (
+    <div className="mt-1 space-y-0.5">
+      {previewEntries.map(([key, value]) => (
+        <p key={key} className="truncate text-[11px] text-gray-400">
+          <span className="font-medium text-gray-500">{key}:</span>{' '}
+          {value}
+        </p>
+      ))}
+    </div>
+  );
 }
