@@ -14,7 +14,7 @@ import {
 } from '@store/slices/releaseSlice';
 import { clearDirty } from '@store/slices/pageSlice';
 import { API_ROUTES } from '@constants';
-import type { PageRelease } from '@/types/page';
+import type { PageRelease, Section } from '@/types/page';
 
 /**
  * Encapsulates the publish flow: POST /api/publish → update Redux state.
@@ -42,7 +42,7 @@ export function usePublish() {
           page,
           publishedBy: user.id,
           previousVersion: latestRelease?.version,
-          previousSectionTypes: latestRelease?.sections.map((s) => s.type),
+          previousSectionTypes: latestRelease?.sections.map((s: Section) => s.type),
         }),
       });
 

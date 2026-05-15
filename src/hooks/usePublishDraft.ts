@@ -16,7 +16,7 @@ import { addRelease } from '@store/slices/releaseSlice';
 import { markClean } from '@store/slices/draftPageSlice';
 import { clearPersistedDraft } from '@store/persistMiddleware';
 import { API_ROUTES } from '@constants';
-import type { PageRelease } from '@/types/page';
+import type { PageRelease, Section } from '@/types/page';
 
 /**
  * Encapsulates the publish flow for the draft editor.
@@ -46,7 +46,7 @@ export function usePublishDraft() {
           page: draft,
           publishedBy: user.id,
           previousVersion: latestRelease?.version,
-          previousSectionTypes: latestRelease?.sections.map((s) => s.type),
+          previousSectionTypes: latestRelease?.sections.map((s: Section) => s.type),
         }),
       });
 

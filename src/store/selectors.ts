@@ -1,4 +1,5 @@
 import type { RootState } from './store';
+import type { Section } from '@/types/page';
 import { compareVersions } from '@/lib/semver';
 
 // ─── Page (CMS snapshot) ──────────────────────────────────────────────────────
@@ -11,17 +12,23 @@ export const selectPageError = (state: RootState) => state.page.error;
 
 // ─── Draft page ───────────────────────────────────────────────────────────────
 export const selectDraft = (state: RootState) => state.draftPage.present;
-export const selectDraftOriginal = (state: RootState) => state.draftPage.original;
-export const selectDraftSections = (state: RootState) =>
+export const selectDraftOriginal = (state: RootState) =>
+  state.draftPage.original;
+export const selectDraftSections = (state: RootState): Section[] =>
   state.draftPage.present?.sections ?? [];
-export const selectDraftIsDirty = (state: RootState) => state.draftPage.isDirty;
-export const selectDraftIsSaving = (state: RootState) => state.draftPage.isSaving;
+export const selectDraftIsDirty = (state: RootState) =>
+  state.draftPage.isDirty;
+export const selectDraftIsSaving = (state: RootState) =>
+  state.draftPage.isSaving;
 export const selectDraftError = (state: RootState) => state.draftPage.error;
 
 /** Find a single section in the draft by ID */
 export const selectDraftSectionById =
-  (sectionId: string) => (state: RootState) =>
-    state.draftPage.present?.sections.find((s) => s.id === sectionId) ?? null;
+  (sectionId: string) =>
+  (state: RootState): Section | null =>
+    state.draftPage.present?.sections.find(
+      (s: Section) => s.id === sectionId,
+    ) ?? null;
 
 // ─── UI ───────────────────────────────────────────────────────────────────────
 export const selectSelectedSectionId = (state: RootState) =>
@@ -33,10 +40,12 @@ export const selectIsDiscardDialogOpen = (state: RootState) =>
   state.ui.isDiscardDialogOpen;
 
 /** The currently selected section object (from the draft) */
-export const selectSelectedSection = (state: RootState) => {
+export const selectSelectedSection = (state: RootState): Section | null => {
   const id = state.ui.selectedSectionId;
   if (!id) return null;
-  return state.draftPage.present?.sections.find((s) => s.id === id) ?? null;
+  return (
+    state.draftPage.present?.sections.find((s: Section) => s.id === id) ?? null
+  );
 };
 
 // ─── Publish ──────────────────────────────────────────────────────────────────

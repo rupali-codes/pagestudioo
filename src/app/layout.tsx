@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { AppProviders } from '@/components/providers/AppProviders';
+import { RoleSwitcher } from '@/components/studio/RoleSwitcher';
 import './globals.css';
 
 const geistSans = Geist({
@@ -39,7 +40,11 @@ export default function RootLayout({
           Skip to main content
         </a>
 
-        <AppProviders>{children}</AppProviders>
+        <AppProviders>
+          {children}
+          {/* Dev-only role switcher — hidden in production builds */}
+          <RoleSwitcher />
+        </AppProviders>
       </body>
     </html>
   );

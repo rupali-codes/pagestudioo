@@ -2,58 +2,128 @@
 
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import {
-  selectIsDirty,
-  selectIsSaving,
-  selectUser,
+  selectDraftIsDirty,
+  selectDraftIsSaving,
   selectIsPublishing,
-  selectLatestRelease,
+  selectPublishError,
+  selectLastPublishedRelease,
+  selectUser,
+  selectDraft,
 } from '@/store/selectors';
+import { resetDraft } from '@/store/slices/draftPageSlice';
+import { openDiscardDialog } from '@/store/slices/uiSlice';
+import { clearPublishError } from '@/store/slices/publishSlice';
 import { hasPermission } from '@/types/auth';
+import { usePublishDraft } from '@/hooks/usePublishDraft';
+import { usePermission } from '@/hooks/usePermission';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { cn } from '@/lib/cn';
 
 interface StudioToolbarProps {
-  onSave?: () => void;
-  onPublish?: () => void;
+  pageTitle?: string;
 }
 
-export function StudioToolbar({ onSave, onPublish }: StudioToolbarProps) {
+export function StudioToolbar({ pageTitle }: StudioToolbarProps) {
   const dispatch = useAppDispatch();
-  void dispatch; // available for future actions
+  const { publish } = usePublishDraft();
 
   const user = useAppSelector(selectUser);
-  const isDirty = useAppSelector(selectIsDirty);
-  const isSaving = useAppSelector(selectIsSaving);
+  const draft = useAppSelector(selectDraft);
+  const isDirty = useAppSelector(selectDraftIsDirty);
+  const isSaving = useAppSelector(selectDraftIsSaving);
   const isPublishing = useAppSelector(selectIsPublishing);
-  const latestRelease = useAppSelector(selectLatestRelease);
+  const publishError = useAppSelector(selectPublishError);
+  const lastRelease = useAppSelector(selectLastPublishedRelease);
 
-  const canEdit = user ? hasPermission(user.role, 'page:edit') : false;
-  const canPublish = user ? hasPermission(user.role, 'page:publish') : false;
+  const canEdit = usePermission('page:edit');
+  const canPublish = usePermission('page:publish');
+
+  void hasPermission; // imported for type safety in other files
+
+  function handleDiscard() {
+    if (isDirty) {
+      dispatch(openDiscardDialog());
+    } else {
+      dispatch(resetDraft());
+    }
+  }
 
   return (
-    <div
-      role="toolbar"
-      aria-label="Studio toolbar"
-      className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2"
+    <header
+      role="banner"
+      className="flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 py-2"
     >
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-semibold text-gray-900">Page Studio</span>
-        {latestRelease && (
-          <Badge variant="info">v{latestRelease.version}</Badge>
+      {/* Left: app name + page title */}
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="shrink-0 text-sm font-semibold text-gray-900">
+          Page Studio
+        </span>
+        {(pageTitle ?? draft?.title) && (
+          <>
+            <span aria-hidden="true" className="text-gray-300">
+              /
+            </span>
+            <span className="truncate text-sm text-gray-600">
+              {pageTitle ?? draft?.title}
+            </span>
+          </>
+        )}
+        {lastRelease && (
+          <Badge variant="info" className="shrink-0">
+            v{lastRelease.version}
+          </Badge>
         )}
         {isDirty && (
-          <Badge variant="warning">Unsaved changes</Badge>
+          <Badge variant="warning" className="shrink-0">
+            Unsaved
+          </Badge>
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Right: actions */}
+      <nav
+        aria-label="Editor actions"
+        className="flex shrink-0 items-center gap-2"
+      >
+        {/* Publish error inline */}
+        {publishError && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-red-600">{publishError}</span>
+            <button
+              type="button"
+              onClick={() => dispatch(clearPublishError())}
+              aria-label="Dismiss publish error"
+              className="text-xs text-red-400 underline hover:text-red-600"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {canEdit && isDirty && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDiscard}
+            className="text-gray-500"
+          >
+            Discard
+          </Button>
+        )}
+
         {canEdit && (
           <Button
             variant="secondary"
             size="sm"
-            onClick={onSave}
             disabled={!isDirty || isSaving}
             aria-busy={isSaving}
+            aria-label="Save draft"
+            // Save is handled by the persistence middleware automatically;
+            // this button is a visual affordance + future server-save hook.
+            onClick={() => {
+              /* server save hook goes here */
+            }}
           >
             {isSaving ? 'Saving…' : 'Save draft'}
           </Button>
@@ -63,20 +133,22 @@ export function StudioToolbar({ onSave, onPublish }: StudioToolbarProps) {
           <Button
             variant="primary"
             size="sm"
-            onClick={onPublish}
-            disabled={isDirty || isPublishing}
+            onClick={publish}
+            disabled={isDirty || isPublishing || !draft}
             aria-busy={isPublishing}
+            aria-label="Publish page"
+            className={cn(isPublishing && 'cursor-wait')}
           >
             {isPublishing ? 'Publishing…' : 'Publish'}
           </Button>
         )}
 
         {user && (
-          <span className="ml-4 text-xs text-gray-500">
+          <span className="ml-2 hidden text-xs text-gray-400 sm:block">
             {user.name} · {user.role}
           </span>
         )}
-      </div>
-    </div>
+      </nav>
+    </header>
   );
 }

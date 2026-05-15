@@ -1,8 +1,18 @@
+/**
+ * POST /api/publish — create an immutable versioned release.
+ *
+ * Protected: requires 'page:publish' permission (publisher or admin role).
+ * The middleware blocks unauthenticated/unauthorized requests at the edge,
+ * but the guard here performs full cryptographic session verification —
+ * defence in depth against middleware bypass.
+ */
+
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { PageSchema } from '@/schemas/page';
 import { bumpVersion, latestVersion, determineBumpType } from '@/lib/semver';
 import { buildReleaseId } from '@/lib/releaseId';
+import { guardApiRoute } from '@/lib/auth/guards';
 import type { PageRelease } from '@/types/page';
 
 const PublishRequestSchema = z.object({
@@ -12,14 +22,18 @@ const PublishRequestSchema = z.object({
   previousSectionTypes: z.array(z.string()).optional(),
 });
 
-/**
- * POST /api/publish
- *
- * Creates an immutable versioned release from the current page state.
- * In production this would persist to a database; here it returns the
- * release object for the client to store in Redux.
- */
 export async function POST(request: NextRequest) {
+  // ── Server-side permission check ─────────────────────────────────────────
+  // Full cryptographic verification — not just the edge cookie fast-path.
+  // This catches any request that bypassed middleware (direct API calls,
+  // misconfigured proxies, etc.).
+  const guard = await guardApiRoute(request, 'page:publish');
+  if (guard.error) return guard.error;
+
+  // guard.session is now typed as Session (non-null)
+  const { session } = guard;
+
+  // ── Parse and validate body ───────────────────────────────────────────────
   let body: unknown;
   try {
     body = await request.json();
@@ -35,9 +49,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { page, publishedBy, previousVersion, previousSectionTypes } =
-    parsed.data;
+  const { page, previousVersion, previousSectionTypes } = parsed.data;
 
+  // Use the authenticated session's userId as the publisher — never trust
+  // the client-supplied publishedBy field for audit purposes.
+  const publishedBy = session.userId;
+
+  // ── Semver calculation ────────────────────────────────────────────────────
   const currentSectionTypes = page.sections.map((s) => s.type);
   const bumpType = determineBumpType(
     previousSectionTypes ?? [],
@@ -47,10 +65,10 @@ export async function POST(request: NextRequest) {
   const baseVersion = previousVersion ?? '0.0.0';
   const version = bumpVersion(baseVersion, bumpType);
 
-  // Ensure version is unique (in production, check against DB)
   const allVersions = previousVersion ? [previousVersion] : [];
   const latest = latestVersion(allVersions);
-  const finalVersion = latest && latest >= version ? bumpVersion(latest, 'patch') : version;
+  const finalVersion =
+    latest && latest >= version ? bumpVersion(latest, 'patch') : version;
 
   const release: PageRelease = {
     releaseId: buildReleaseId(page.pageId, finalVersion),

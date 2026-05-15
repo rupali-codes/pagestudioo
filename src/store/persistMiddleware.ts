@@ -19,8 +19,15 @@
  */
 
 import type { Middleware } from '@reduxjs/toolkit';
-import type { RootState } from './store';
 import type { Page } from '@/types/page';
+
+// Minimal slice of RootState needed by this middleware.
+// Using a local interface instead of importing RootState from store.ts
+// breaks the circular dependency:
+//   store.ts → persistMiddleware.ts → RootState → store.ts (cycle)
+interface StateWithDraft {
+  draftPage: { present: Page | null };
+}
 
 // ─── Storage key ──────────────────────────────────────────────────────────────
 
@@ -76,11 +83,11 @@ export function clearPersistedDraft(pageId: string): void {
  * Immer always produces a new reference when state changes, so reference
  * equality is a reliable change detector here.
  */
-export const persistDraftMiddleware: Middleware<object, RootState> =
+export const persistDraftMiddleware: Middleware =
   (store) => (next) => (action) => {
-    const prevDraft = (store.getState() as RootState).draftPage.present;
+    const prevDraft = (store.getState() as StateWithDraft).draftPage.present;
     const result = next(action);
-    const nextDraft = (store.getState() as RootState).draftPage.present;
+    const nextDraft = (store.getState() as StateWithDraft).draftPage.present;
 
     if (nextDraft !== prevDraft && nextDraft !== null) {
       saveDraft(nextDraft);
