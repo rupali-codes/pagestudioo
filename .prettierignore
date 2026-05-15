@@ -1,0 +1,14 @@
+# Build outputs
+.next/
+out/
+build/
+
+# Generated files
+next-env.d.ts
+playwright-report/
+
+# Dependencies
+node_modules/
+
+# Lock files — formatting these causes unnecessary diffs
+package-lock.json

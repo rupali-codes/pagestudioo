@@ -1,0 +1,19 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+/**
+ * Debounces a value by the given delay (ms).
+ * Useful for deferring expensive operations (search, autosave) until
+ * the user has stopped typing.
+ */
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+}

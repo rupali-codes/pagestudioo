@@ -1,0 +1,58 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+
+    // ─── Strict mode ────────────────────────────────────────────────────────
+    // All strict flags on. This is the single most impactful TypeScript setting
+    // for catching bugs at compile time rather than runtime.
+    "strict": true,
+    "noUncheckedIndexedAccess": true,   // arr[i] is T | undefined, not T
+    "noImplicitReturns": true,          // every code path must return
+    "noFallthroughCasesInSwitch": true, // switch cases must break/return
+
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+
+    // ─── Path aliases ────────────────────────────────────────────────────────
+    // One alias per architectural layer. Using explicit layer aliases (e.g.
+    // @store/, @types/) instead of a single @/* makes import origins obvious
+    // at a glance and prevents accidental cross-layer coupling.
+    "paths": {
+      // Catch-all (keep for compatibility with Next.js internals)
+      "@/*": ["./src/*"],
+
+      // Architectural layers
+      "@app/*":       ["./src/app/*"],
+      "@components/*":["./src/components/*"],
+      "@features/*":  ["./src/features/*"],
+      "@hooks/*":     ["./src/hooks/*"],
+      "@lib/*":       ["./src/lib/*"],
+      "@registry/*":  ["./src/registry/*"],
+      "@schemas/*":   ["./src/schemas/*"],
+      "@store/*":     ["./src/store/*"],
+      "@types/*":     ["./src/types/*"],
+      "@utils/*":     ["./src/utils/*"],
+      "@cms/*":       ["./src/cms/*"],
+      "@constants":   ["./src/constants/index.ts"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
