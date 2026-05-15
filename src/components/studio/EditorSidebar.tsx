@@ -26,6 +26,8 @@ import { SectionListItem } from './SectionListItem';
 import { SectionEditorPanel } from './editors/SectionEditorPanel';
 import { AddSectionPanel } from './AddSectionPanel';
 import { Button } from '@/components/ui/Button';
+import { usePermission } from '@/hooks/usePermission';
+import { getSectionDisplayName } from '@/registry/sectionRegistry';
 import type { Section, SectionType } from '@/types/page';
 
 export function EditorSidebar() {
@@ -34,13 +36,14 @@ export function EditorSidebar() {
   const selectedId = useAppSelector(selectSelectedSectionId);
   const selectedSection = useAppSelector(selectSelectedSection);
   const isAddOpen = useAppSelector(selectIsAddSectionOpen);
+  const canEdit = usePermission('page:edit');
 
   // ── Add section panel ────────────────────────────────────────────────────
   if (isAddOpen) {
     return <AddSectionPanel />;
   }
 
-  // ── Section editor panel ─────────────────────────────────────────────────
+  // ── Section editor panel (viewers see read-only display) ─────────────────
   if (selectedId && selectedSection) {
     return (
       <div className="flex h-full flex-col">
@@ -68,16 +71,20 @@ export function EditorSidebar() {
             </svg>
           </button>
           <span className="text-sm font-medium text-gray-700">
-            Edit section
+            {canEdit ? 'Edit section' : 'Section details'}
           </span>
         </div>
 
-        {/* Typed editor */}
+        {/* Panel content */}
         <div className="flex-1 overflow-y-auto">
-          <SectionEditorPanel
-            sectionId={selectedId}
-            sectionType={selectedSection.type as SectionType}
-          />
+          {canEdit ? (
+            <SectionEditorPanel
+              sectionId={selectedId}
+              sectionType={selectedSection.type as SectionType}
+            />
+          ) : (
+            <ReadOnlySectionView section={selectedSection} />
+          )}
         </div>
       </div>
     );
@@ -91,42 +98,46 @@ export function EditorSidebar() {
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
           Sections
         </h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => dispatch(openAddSection())}
-          aria-label="Add a new section"
-          className="h-7 gap-1 px-2 text-xs"
-        >
-          <svg
-            aria-hidden="true"
-            className="h-3.5 w-3.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
+        {canEdit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => dispatch(openAddSection())}
+            aria-label="Add a new section"
+            className="h-7 gap-1 px-2 text-xs"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 4.5v15m7.5-7.5h-15"
-            />
-          </svg>
-          Add
-        </Button>
+            <svg
+              aria-hidden="true"
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+            Add
+          </Button>
+        )}
       </div>
 
       {/* List */}
       {sections.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
           <p className="text-sm text-gray-500">No sections yet.</p>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => dispatch(openAddSection())}
-          >
-            Add first section
-          </Button>
+          {canEdit && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => dispatch(openAddSection())}
+            >
+              Add first section
+            </Button>
+          )}
         </div>
       ) : (
         <ul role="list" className="flex-1 overflow-y-auto">
@@ -143,6 +154,37 @@ export function EditorSidebar() {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+// ─── Read-only section view ────────────────────────────────────────────────────
+
+interface ReadOnlySectionViewProps {
+  section: Section;
+}
+
+function ReadOnlySectionView({ section }: ReadOnlySectionViewProps) {
+  return (
+    <div className="space-y-4 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+        {getSectionDisplayName(section.type)}
+      </p>
+
+      {Object.keys(section.props).length === 0 && (
+        <p className="text-xs text-gray-500">No props configured.</p>
+      )}
+
+      {Object.entries(section.props).map(([key, value]) => (
+        <div key={key}>
+          <p className="mb-0.5 text-xs font-medium text-gray-600 capitalize">
+            {key}
+          </p>
+          <p className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-800">
+            {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }

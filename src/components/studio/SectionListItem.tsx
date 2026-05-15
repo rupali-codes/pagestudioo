@@ -23,6 +23,7 @@ import {
 import { selectSection } from '@/store/slices/uiSlice';
 import { cn } from '@/lib/cn';
 import { getSectionDisplayName } from '@/registry/sectionRegistry';
+import { usePermission } from '@/hooks/usePermission';
 import type { Section } from '@/types/page';
 
 interface SectionListItemProps {
@@ -42,6 +43,7 @@ export function SectionListItem({
 }: SectionListItemProps) {
   const dispatch = useAppDispatch();
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const canEdit = usePermission('page:edit');
 
   function handleSelect() {
     dispatch(selectSection(isSelected ? null : section.id));
@@ -98,46 +100,48 @@ export function SectionListItem({
         </span>
 
         {/* Reorder controls */}
-        <div
-          className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <IconButton
-            onClick={handleMoveUp}
-            disabled={isFirst}
-            aria-label={`Move ${section.type} section up`}
-            title="Move up"
+        {canEdit && (
+          <div
+            className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+            onClick={(e) => e.stopPropagation()}
           >
-            <ChevronUpIcon />
-          </IconButton>
+            <IconButton
+              onClick={handleMoveUp}
+              disabled={isFirst}
+              aria-label={`Move ${section.type} section up`}
+              title="Move up"
+            >
+              <ChevronUpIcon />
+            </IconButton>
 
-          <IconButton
-            onClick={handleMoveDown}
-            disabled={isLast}
-            aria-label={`Move ${section.type} section down`}
-            title="Move down"
-          >
-            <ChevronDownIcon />
-          </IconButton>
+            <IconButton
+              onClick={handleMoveDown}
+              disabled={isLast}
+              aria-label={`Move ${section.type} section down`}
+              title="Move down"
+            >
+              <ChevronDownIcon />
+            </IconButton>
 
-          <IconButton
-            onClick={handleRemoveClick}
-            onBlur={handleBlur}
-            aria-label={
-              confirmRemove
-                ? `Confirm remove ${section.type} section`
-                : `Remove ${section.type} section`
-            }
-            title={confirmRemove ? 'Click again to confirm' : 'Remove'}
-            className={cn(
-              confirmRemove
-                ? 'text-red-600 hover:bg-red-50'
-                : 'text-gray-400 hover:text-red-500',
-            )}
-          >
-            <TrashIcon />
-          </IconButton>
-        </div>
+            <IconButton
+              onClick={handleRemoveClick}
+              onBlur={handleBlur}
+              aria-label={
+                confirmRemove
+                  ? `Confirm remove ${section.type} section`
+                  : `Remove ${section.type} section`
+              }
+              title={confirmRemove ? 'Click again to confirm' : 'Remove'}
+              className={cn(
+                confirmRemove
+                  ? 'text-red-600 hover:bg-red-50'
+                  : 'text-gray-400 hover:text-red-500',
+              )}
+            >
+              <TrashIcon />
+            </IconButton>
+          </div>
+        )}
       </div>
     </li>
   );

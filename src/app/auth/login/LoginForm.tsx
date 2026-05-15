@@ -26,7 +26,6 @@ const ROLE_DESCRIPTIONS: Record<Role, string> = {
   viewer:    'Read-only access to published pages and previews.',
   editor:    'Access to the studio editor. Cannot publish.',
   publisher: 'Full editor access plus the ability to publish releases.',
-  admin:     'All permissions including user management.',
 };
 
 interface LoginFormProps {
@@ -68,7 +67,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
     }
   }
 
-  const roles: Role[] = ['viewer', 'editor', 'publisher', 'admin'];
+  const roles: Role[] = ['viewer', 'editor', 'publisher'];
 
   return (
     <form

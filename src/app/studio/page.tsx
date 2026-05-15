@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 };
 
 export default async function StudioIndexPage() {
-  // Server-side guard — full session verification
-  await requirePermission('page:edit');
+  // Server-side auth check — all authenticated roles can access
+  await requirePermission('page:read');
 
   const result = await contentfulAdapter.fetchAllSlugs();
   const slugs = result.ok ? result.value : [];

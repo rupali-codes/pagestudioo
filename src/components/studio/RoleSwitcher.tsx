@@ -21,20 +21,18 @@ import { MOCK_USERS } from '@/types/auth';
 import type { Role } from '@/types/auth';
 import { cn } from '@/lib/cn';
 
-const ROLES: Role[] = ['viewer', 'editor', 'publisher', 'admin'];
+const ROLES: Role[] = ['viewer', 'editor', 'publisher'];
 
 const ROLE_COLORS: Record<Role, string> = {
   viewer:    'bg-gray-100 text-gray-700 hover:bg-gray-200',
   editor:    'bg-blue-100 text-blue-700 hover:bg-blue-200',
   publisher: 'bg-green-100 text-green-700 hover:bg-green-200',
-  admin:     'bg-purple-100 text-purple-700 hover:bg-purple-200',
 };
 
 const ACTIVE_COLORS: Record<Role, string> = {
   viewer:    'bg-gray-700 text-white',
   editor:    'bg-blue-600 text-white',
   publisher: 'bg-green-600 text-white',
-  admin:     'bg-purple-600 text-white',
 };
 
 export function RoleSwitcher() {
@@ -149,8 +147,8 @@ function RoleSwitcherInner() {
           )}
           aria-hidden="true"
         />
-        <span className="capitalize">{currentRole ?? 'Not signed in'}</span>
-        <span aria-hidden="true" className="text-gray-400">
+        <span className="capitalize text-gray-700">{currentRole ?? 'Not signed in'}</span>
+        <span aria-hidden="true" className="text-gray-800">
           {isExpanded ? '▲' : '▼'}
         </span>
       </button>

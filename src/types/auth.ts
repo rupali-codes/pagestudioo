@@ -6,7 +6,7 @@
  * both server-side guards and client-side UI checks derive from it.
  */
 
-export type Role = 'viewer' | 'editor' | 'publisher' | 'admin';
+export type Role = 'viewer' | 'editor' | 'publisher';
 
 export interface User {
   id: string;
@@ -30,7 +30,6 @@ export const ROLE_PERMISSIONS = {
   viewer:    ['page:read'],
   editor:    ['page:read', 'page:edit'],
   publisher: ['page:read', 'page:edit', 'page:publish'],
-  admin:     ['page:read', 'page:edit', 'page:publish', 'page:delete', 'user:manage'],
 } as const satisfies Record<Role, readonly string[]>;
 
 export type Permission = (typeof ROLE_PERMISSIONS)[Role][number];
@@ -50,7 +49,7 @@ export function hasAllPermissions(role: Role, permissions: Permission[]): boolea
  * Used by middleware and server-side guards — single place to change policy.
  */
 export const ROUTE_PERMISSIONS = {
-  studio:  'page:edit'    as Permission,
+  studio:  'page:read'    as Permission,
   publish: 'page:publish' as Permission,
   preview: 'page:read'    as Permission,
 } as const;
@@ -74,11 +73,5 @@ export const MOCK_USERS: Record<Role, User> = {
     name: 'Carol Publisher',
     email: 'publisher@example.com',
     role: 'publisher',
-  },
-  admin: {
-    id: 'mock-admin',
-    name: 'Dave Admin',
-    email: 'admin@example.com',
-    role: 'admin',
   },
 };

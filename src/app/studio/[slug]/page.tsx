@@ -21,11 +21,11 @@ export async function generateMetadata({
 }
 
 export default async function StudioSlugPage({ params }: StudioSlugPageProps) {
-  // ── Server-side permission check ─────────────────────────────────────────
-  // Middleware already blocked viewers at the edge, but this guard performs
-  // full cryptographic session verification as a second layer.
-  // Redirects to /auth/unauthorized if the session lacks page:edit.
-  await requirePermission('page:edit');
+  // ── Server-side auth check ───────────────────────────────────────────────
+  // All authenticated roles (viewer, editor, publisher, admin) can access the
+  // studio. Viewers see a read-only view; editors and above can edit.
+  // Redirects to /auth/login if no session exists.
+  await requirePermission('page:read');
 
   const { slug } = await params;
 

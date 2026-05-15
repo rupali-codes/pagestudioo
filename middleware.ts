@@ -19,7 +19,7 @@
  * in depth: even if middleware is bypassed, the guard catches it.
  *
  * Route policy:
- *   /studio/*   → requires 'editor' role or above (page:edit permission)
+ *   /studio/*   → requires any authenticated session (page:read permission)
  *   /api/publish → requires 'publisher' role or above (page:publish permission)
  *   /preview/*  → requires any authenticated session (page:read)
  *   /auth/*     → always public (login/logout pages)

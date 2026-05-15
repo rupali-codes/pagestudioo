@@ -40,13 +40,13 @@ export function StudioToolbar({ pageTitle }: StudioToolbarProps) {
 
   const canEdit = usePermission('page:edit');
   const canPublish = usePermission('page:publish');
+  const isViewOnly = !canEdit;
 
   void hasPermission; // imported for type safety in other files
 
   async function handleSave() {
     dispatch(setDraftSaving(true));
     dispatch(markClean());
-    // Brief delay so aria-busy state is visible before the badge flips
     await new Promise((resolve) => setTimeout(resolve, 150));
     dispatch(setDraftSaving(false));
   }
@@ -78,6 +78,11 @@ export function StudioToolbar({ pageTitle }: StudioToolbarProps) {
               {pageTitle ?? draft?.title}
             </span>
           </>
+        )}
+        {isViewOnly && (
+          <Badge variant="default" className="shrink-0">
+            View only
+          </Badge>
         )}
         {lastRelease && (
           <Badge variant="info" className="shrink-0">
