@@ -2,11 +2,7 @@
 
 import { useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@store/hooks';
-import {
-  selectDraft,
-  selectUser,
-  selectLatestRelease,
-} from '@store/selectors';
+import { selectDraft, selectUser } from '@store/selectors';
 import {
   startPublish,
   publishSuccess,
@@ -16,22 +12,31 @@ import { addRelease } from '@store/slices/releaseSlice';
 import { markClean } from '@store/slices/draftPageSlice';
 import { clearPersistedDraft } from '@store/persistMiddleware';
 import { API_ROUTES } from '@constants';
-import type { PageRelease, Section } from '@/types/page';
+import type { PageRelease } from '@/types/page';
+import type { PublishStatus } from '@/lib/versioning/publishService';
+
+interface PublishResponse {
+  status: PublishStatus;
+  release: PageRelease;
+  bumpType: 'major' | 'minor' | 'patch' | null;
+}
 
 /**
  * Encapsulates the publish flow for the draft editor.
  *
- * On success:
- *   - Adds the new release to `releaseSlice` (history)
+ * Sends only the page to the server — version calculation, changelog, and
+ * snapshot persistence all happen server-side in the publish service.
+ *
+ * On success (new release or noop):
+ *   - Adds the release to `releaseSlice` (history)
  *   - Stores it in `publishSlice` (last published)
  *   - Marks the draft clean
- *   - Clears the localStorage draft (published = no longer a draft)
+ *   - Clears the localStorage draft
  */
 export function usePublishDraft() {
   const dispatch = useAppDispatch();
   const draft = useAppSelector(selectDraft);
   const user = useAppSelector(selectUser);
-  const latestRelease = useAppSelector(selectLatestRelease);
 
   const publish = useCallback(async () => {
     if (!draft || !user) return;
@@ -42,12 +47,8 @@ export function usePublishDraft() {
       const response = await fetch(API_ROUTES.publish, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          page: draft,
-          publishedBy: user.id,
-          previousVersion: latestRelease?.version,
-          previousSectionTypes: latestRelease?.sections.map((s: Section) => s.type),
-        }),
+        // Send only the page — server derives version from its own snapshot store
+        body: JSON.stringify({ page: draft }),
       });
 
       if (!response.ok) {
@@ -55,7 +56,7 @@ export function usePublishDraft() {
         throw new Error(data.error ?? `Publish failed (${response.status})`);
       }
 
-      const data = (await response.json()) as { release: PageRelease };
+      const data = (await response.json()) as PublishResponse;
       dispatch(publishSuccess(data.release));
       dispatch(addRelease(data.release));
       dispatch(markClean());
@@ -65,7 +66,7 @@ export function usePublishDraft() {
         publishFailure(e instanceof Error ? e.message : 'Publish failed'),
       );
     }
-  }, [dispatch, draft, user, latestRelease]);
+  }, [dispatch, draft, user]);
 
   return { publish };
 }

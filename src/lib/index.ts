@@ -1,11 +1,11 @@
 /**
  * lib barrel export — domain utilities.
  *
- * These are framework-agnostic, pure TypeScript utilities tied to the
- * application domain (validation, versioning, result handling).
+ * Framework-agnostic, pure TypeScript utilities tied to the application domain.
+ * Contrast with `utils/` which contains generic helpers (array, string, etc.).
  *
- * Contrast with `utils/` which contains generic helpers with no domain
- * knowledge (array manipulation, string formatting, etc.).
+ * Versioning utilities are in `@/lib/versioning` — import from there directly
+ * to keep the import explicit about which subsystem you're using.
  */
 export { cn } from './cn';
 export { ok, err, mapResult } from './result';
@@ -17,9 +17,10 @@ export {
   bumpVersion,
   compareVersions,
   latestVersion,
-  determineBumpType,
 } from './semver';
 export type { SemVer, BumpType } from './semver';
 export { buildReleaseId } from './releaseId';
 export { env, publicEnv } from './env';
 export { renderSection } from './renderSection';
+export { getDefaultSectionProps } from './defaultSectionProps';
+export { DEMO_PAGE, DEMO_SLUG } from './demoPage';

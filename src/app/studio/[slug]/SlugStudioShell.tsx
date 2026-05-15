@@ -8,24 +8,20 @@
  *   2. Dispatches `loadDraft(page)` to set the original baseline.
  *   3. Checks localStorage for a persisted draft for this pageId.
  *   4. If a draft exists, dispatches `hydrateDraft` to restore it.
- *   5. Seeds a demo user if none is authenticated (dev convenience).
+ *   5. SessionHydrator (in AppProviders) populates Redux auth from the
+ *      server session cookie — no manual user seeding needed here.
  *
  * Layout: three-column
  *   ┌──────────────┬──────────────────────────┬──────────────┐
  *   │ EditorSidebar│     Live Preview          │ ReleaseHistory│
  *   │  (280px)     │     (flex-1)              │  (240px)     │
  *   └──────────────┴──────────────────────────┴──────────────┘
- *
- * The preview reads from `draftPage.present` in Redux, so every edit
- * dispatched from the sidebar is immediately reflected in the preview
- * without any extra wiring.
  */
 
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loadDraft, hydrateDraft } from '@/store/slices/draftPageSlice';
-import { setUser } from '@/store/slices/authSlice';
-import { selectDraft, selectUser } from '@/store/selectors';
+import { selectDraft } from '@/store/selectors';
 import { loadPersistedDraft } from '@/store/persistMiddleware';
 import { PageRenderer } from '@/components/page/PageRenderer';
 import { PageErrorBoundary } from '@/components/page/PageErrorBoundary';
@@ -36,55 +32,34 @@ import { DiscardDialog } from '@/components/studio/DiscardDialog';
 import type { Page } from '@/types/page';
 
 interface SlugStudioShellProps {
-  /** The CMS-fetched page — used as the original baseline for the draft. */
   page: Page;
 }
 
 export function SlugStudioShell({ page }: SlugStudioShellProps) {
   const dispatch = useAppDispatch();
   const draft = useAppSelector(selectDraft);
-  const user = useAppSelector(selectUser);
 
   useEffect(() => {
-    // Step 1: load the CMS page as the original baseline
+    // Load the CMS page as the original baseline
     dispatch(loadDraft(page));
 
-    // Step 2: check for a persisted draft and hydrate if found
+    // Restore any persisted draft edits from a previous session
     const persisted = loadPersistedDraft(page.pageId);
     if (persisted) {
       dispatch(hydrateDraft(persisted));
     }
-
-    // Step 3: seed a demo user if none is authenticated
-    // In production this would be replaced by a real auth check
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page.pageId]); // only re-run when the page changes, not on every render
-
-  useEffect(() => {
-    if (!user) {
-      dispatch(
-        setUser({
-          id: 'demo-user',
-          name: 'Demo Editor',
-          email: 'editor@example.com',
-          role: 'publisher',
-        }),
-      );
-    }
-  }, [dispatch, user]);
+  }, [page.pageId]);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-100">
-      {/* Top toolbar — full width */}
       <StudioToolbar pageTitle={page.title} />
 
-      {/* Three-column editor layout */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-
         {/* Left: section list + editor panels */}
         <aside
           aria-label="Section editor"
-          className="flex w-70 shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white"
+          className="flex shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white"
           style={{ width: '280px' }}
         >
           <EditorSidebar />
@@ -99,8 +74,7 @@ export function SlugStudioShell({ page }: SlugStudioShellProps) {
         >
           {draft ? (
             <PageErrorBoundary>
-              {/* Scale the preview down slightly so it fits the panel */}
-              <div className="min-h-full origin-top bg-white shadow-sm">
+              <div className="min-h-full bg-white shadow-sm">
                 <PageRenderer page={draft} isPreview />
               </div>
             </PageErrorBoundary>
@@ -108,7 +82,6 @@ export function SlugStudioShell({ page }: SlugStudioShellProps) {
             <div
               className="flex h-full items-center justify-center text-sm text-gray-400"
               aria-live="polite"
-              aria-label="Loading page preview"
             >
               Loading preview…
             </div>
@@ -124,7 +97,6 @@ export function SlugStudioShell({ page }: SlugStudioShellProps) {
         </aside>
       </div>
 
-      {/* Discard confirmation dialog — rendered at root so it overlays everything */}
       <DiscardDialog />
     </div>
   );

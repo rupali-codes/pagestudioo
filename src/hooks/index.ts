@@ -10,3 +10,5 @@ export { useMediaQuery } from './useMediaQuery';
 export { usePermission } from './usePermission';
 export { usePublish } from './usePublish';
 export { usePublishDraft } from './usePublishDraft';
+export { useReleaseHistory } from './useReleaseHistory';
+export { useSessionHydration } from './useSessionHydration';

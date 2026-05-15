@@ -1,39 +1,32 @@
 /**
  * POST /api/publish — create an immutable versioned release.
  *
- * Protected: requires 'page:publish' permission (publisher or admin role).
- * The middleware blocks unauthenticated/unauthorized requests at the edge,
- * but the guard here performs full cryptographic session verification —
- * defence in depth against middleware bypass.
+ * Protected: requires 'page:publish' permission (publisher or admin).
+ *
+ * Request body: { page: Page }
+ *
+ * Response 201: { release: PageRelease, status: PublishStatus, bumpType }
+ * Response 200: { release: PageRelease, status: 'noop' }  (identical content)
+ * Response 401/403: auth errors from guardApiRoute
+ * Response 422: schema validation failure
+ * Response 500: publish service error
+ *
+ * The route delegates all versioning logic to publishService — it owns
+ * only HTTP concerns (auth, parsing, response shaping).
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { PageSchema } from '@/schemas/page';
-import { bumpVersion, latestVersion, determineBumpType } from '@/lib/semver';
-import { buildReleaseId } from '@/lib/releaseId';
 import { guardApiRoute } from '@/lib/auth/guards';
-import type { PageRelease } from '@/types/page';
-
-const PublishRequestSchema = z.object({
-  page: PageSchema,
-  publishedBy: z.string().min(1),
-  previousVersion: z.string().optional(),
-  previousSectionTypes: z.array(z.string()).optional(),
-});
+import { publishPage } from '@/lib/versioning/publishService';
 
 export async function POST(request: NextRequest) {
-  // ── Server-side permission check ─────────────────────────────────────────
-  // Full cryptographic verification — not just the edge cookie fast-path.
-  // This catches any request that bypassed middleware (direct API calls,
-  // misconfigured proxies, etc.).
+  // ── Auth ──────────────────────────────────────────────────────────────────
   const guard = await guardApiRoute(request, 'page:publish');
   if (guard.error) return guard.error;
-
-  // guard.session is now typed as Session (non-null)
   const { session } = guard;
 
-  // ── Parse and validate body ───────────────────────────────────────────────
+  // ── Parse body ────────────────────────────────────────────────────────────
   let body: unknown;
   try {
     body = await request.json();
@@ -41,7 +34,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const parsed = PublishRequestSchema.safeParse(body);
+  // Validate only the page field — version metadata is computed server-side
+  const parsed = PageSchema.safeParse(
+    (body as Record<string, unknown>)?.page ?? body,
+  );
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'Validation failed', details: parsed.error.flatten() },
@@ -49,37 +45,33 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { page, previousVersion, previousSectionTypes } = parsed.data;
-
-  // Use the authenticated session's userId as the publisher — never trust
-  // the client-supplied publishedBy field for audit purposes.
-  const publishedBy = session.userId;
-
-  // ── Semver calculation ────────────────────────────────────────────────────
-  const currentSectionTypes = page.sections.map((s) => s.type);
-  const bumpType = determineBumpType(
-    previousSectionTypes ?? [],
-    currentSectionTypes,
-  );
-
-  const baseVersion = previousVersion ?? '0.0.0';
-  const version = bumpVersion(baseVersion, bumpType);
-
-  const allVersions = previousVersion ? [previousVersion] : [];
-  const latest = latestVersion(allVersions);
-  const finalVersion =
-    latest && latest >= version ? bumpVersion(latest, 'patch') : version;
-
-  const release: PageRelease = {
-    releaseId: buildReleaseId(page.pageId, finalVersion),
-    version: finalVersion,
-    pageId: page.pageId,
-    slug: page.slug,
-    title: page.title,
-    sections: page.sections,
+  // ── Publish ───────────────────────────────────────────────────────────────
+  const result = await publishPage({
+    page: parsed.data,
+    publishedBy: session.userId,
     publishedAt: new Date().toISOString(),
-    publishedBy,
-  };
+  });
 
-  return NextResponse.json({ release }, { status: 201 });
+  if (!result.ok) {
+    console.error('[api/publish]', result.error.message);
+    return NextResponse.json(
+      { error: result.error.message },
+      { status: 500 },
+    );
+  }
+
+  const { status, release, bumpType } = result.value;
+
+  // 200 for noop (no new version created), 201 for a new release
+  const httpStatus = status === 'noop' ? 200 : 201;
+
+  return NextResponse.json(
+    {
+      status,
+      bumpType,
+      release,
+      changelog: release.changelog,
+    },
+    { status: httpStatus },
+  );
 }

@@ -42,3 +42,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# release snapshots — tracked locally, excluded from CI builds
+# Remove this line if you want to commit snapshots to git for auditability
+/releases/
+
+# test coverage
+/coverage/
