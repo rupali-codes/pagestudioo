@@ -22,6 +22,7 @@ import {
 } from '@/store/slices/draftPageSlice';
 import { selectSection } from '@/store/slices/uiSlice';
 import { cn } from '@/lib/cn';
+import { getSectionDisplayName } from '@/registry/sectionRegistry';
 import type { Section } from '@/types/page';
 
 interface SectionListItemProps {
@@ -91,9 +92,9 @@ export function SectionListItem({
           isSelected && 'bg-blue-50',
         )}
       >
-        {/* Section type label */}
+        {/* Section type label — sourced from registry displayName */}
         <span className="min-w-0 flex-1 truncate font-medium text-gray-800">
-          {SECTION_LABELS[section.type] ?? section.type}
+          {getSectionDisplayName(section.type)}
         </span>
 
         {/* Reorder controls */}
@@ -141,15 +142,6 @@ export function SectionListItem({
     </li>
   );
 }
-
-// ─── Human-readable section labels ───────────────────────────────────────────
-
-const SECTION_LABELS: Record<string, string> = {
-  hero: 'Hero',
-  featureGrid: 'Feature Grid',
-  testimonial: 'Testimonial',
-  cta: 'Call to Action',
-};
 
 // ─── Icon button ──────────────────────────────────────────────────────────────
 

@@ -7,6 +7,9 @@
  * Called once when the studio editor mounts for a given slug. After that,
  * new releases are added to Redux directly by usePublishDraft on success,
  * so the UI stays in sync without re-fetching.
+ *
+ * Loading state is derived from whether the slug has been fetched at least
+ * once, avoiding synchronous setState calls in the effect body.
  */
 
 import { useEffect, useState } from 'react';
@@ -21,19 +24,17 @@ interface UseReleaseHistoryResult {
 
 export function useReleaseHistory(slug: string): UseReleaseHistoryResult {
   const dispatch = useAppDispatch();
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
+
+  const isLoading = loadedSlug !== slug && slug.length > 0;
 
   useEffect(() => {
     if (!slug) return;
 
-    setIsLoading(true);
-    setError(null);
-
     fetch(`/api/releases/${encodeURIComponent(slug)}`)
       .then(async (res) => {
         if (res.status === 401 || res.status === 403) {
-          // Not authenticated — leave release list empty, don't error
           return;
         }
         if (!res.ok) {
@@ -46,7 +47,9 @@ export function useReleaseHistory(slug: string): UseReleaseHistoryResult {
       .catch((e: unknown) => {
         setError(e instanceof Error ? e.message : 'Failed to load releases');
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        setLoadedSlug(slug);
+      });
   }, [slug, dispatch]);
 
   return { isLoading, error };

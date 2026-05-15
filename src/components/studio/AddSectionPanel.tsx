@@ -18,28 +18,25 @@ import { getDefaultSectionProps } from '@/lib/defaultSectionProps';
 import { SECTION_TYPES } from '@/constants';
 import type { SectionType } from '@/types/page';
 import { cn } from '@/lib/cn';
+import { getSectionDisplayName } from '@/registry/sectionRegistry';
 
 const SECTION_META: Record<
   SectionType,
-  { label: string; description: string; icon: string }
+  { description: string; icon: string }
 > = {
   hero: {
-    label: 'Hero',
     description: 'Full-width heading with optional CTA button.',
     icon: '🦸',
   },
   featureGrid: {
-    label: 'Feature Grid',
     description: 'Grid of feature cards with icons and descriptions.',
     icon: '⚡',
   },
   testimonial: {
-    label: 'Testimonial',
     description: 'Customer quotes with author attribution.',
     icon: '💬',
   },
   cta: {
-    label: 'Call to Action',
     description: 'Prominent section with one or two action buttons.',
     icon: '🎯',
   },
@@ -123,7 +120,7 @@ export function AddSectionPanel() {
                   </span>
                   <div>
                     <p className="text-sm font-medium text-gray-900">
-                      {meta.label}
+                      {getSectionDisplayName(type)}
                     </p>
                     <p className="mt-0.5 text-xs text-gray-500">
                       {meta.description}

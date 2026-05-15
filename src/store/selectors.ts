@@ -38,6 +38,8 @@ export const selectIsAddSectionOpen = (state: RootState) =>
   state.ui.isAddSectionOpen;
 export const selectIsDiscardDialogOpen = (state: RootState) =>
   state.ui.isDiscardDialogOpen;
+export const selectDraftRestored = (state: RootState) =>
+  state.ui.draftRestored;
 
 /** The currently selected section object (from the draft) */
 export const selectSelectedSection = (state: RootState): Section | null => {

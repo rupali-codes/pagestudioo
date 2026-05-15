@@ -24,6 +24,8 @@ export interface UiState {
   isAddSectionOpen: boolean;
   /** Whether the discard-changes confirmation dialog is open. */
   isDiscardDialogOpen: boolean;
+  /** Whether a persisted draft was restored on mount — shows "Draft restored" banner. */
+  draftRestored: boolean;
 }
 
 const initialState: UiState = {
@@ -31,6 +33,7 @@ const initialState: UiState = {
   activePanel: 'sections',
   isAddSectionOpen: false,
   isDiscardDialogOpen: false,
+  draftRestored: false,
 };
 
 const uiSlice = createSlice({
@@ -60,6 +63,14 @@ const uiSlice = createSlice({
     closeDiscardDialog(state) {
       state.isDiscardDialogOpen = false;
     },
+
+    setDraftRestored(state) {
+      state.draftRestored = true;
+    },
+
+    clearDraftRestored(state) {
+      state.draftRestored = false;
+    },
   },
 });
 
@@ -70,6 +81,8 @@ export const {
   closeAddSection,
   openDiscardDialog,
   closeDiscardDialog,
+  setDraftRestored,
+  clearDraftRestored,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

@@ -53,6 +53,8 @@ export {
   closeAddSection,
   openDiscardDialog,
   closeDiscardDialog,
+  setDraftRestored,
+  clearDraftRestored,
 } from './slices/uiSlice';
 
 // ─── publishSlice (in-flight publish operation) ───────────────────────────────

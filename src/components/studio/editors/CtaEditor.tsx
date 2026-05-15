@@ -36,17 +36,8 @@ export function CtaEditor({ sectionId }: CtaEditorProps) {
   const dSecondaryLabel = useDebounce(secondaryLabel, 300);
   const dSecondaryHref = useDebounce(secondaryHref, 300);
 
-  // Reset when switching sections
-  useEffect(() => {
-    const p = validate(CtaPropsSchema, section?.props ?? {});
-    if (!p.ok) return;
-    setHeading(p.value.heading);
-    setBody(p.value.body ?? '');
-    setPrimaryLabel(p.value.primaryLabel);
-    setPrimaryHref(p.value.primaryHref);
-    setSecondaryLabel(p.value.secondaryLabel ?? '');
-    setSecondaryHref(p.value.secondaryHref ?? '');
-  }, [sectionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Note: the component is keyed by sectionId in SectionEditorPanel so it
+  // remounts on section switch — no sync effect needed.
 
   useEffect(() => {
     if (!section) return;

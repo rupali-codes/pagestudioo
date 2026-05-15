@@ -4,12 +4,12 @@
  * HeroEditor — form panel for editing Hero section props.
  *
  * Design rules:
- *  - Reads from Redux via selector, writes via dispatch only — no local state
- *    for field values. This keeps the preview in sync on every keystroke.
- *  - Uses useDebounce to batch rapid keystrokes into a single dispatch,
- *    avoiding a Redux write + Immer clone on every character.
+ *  - Uses local state for instant typing feedback, debounced before dispatching
+ *    to Redux. This avoids a Redux write + Immer clone on every keystroke.
+ *  - The editor remounts on section switch via `key={sectionId}` in
+ *    SectionEditorPanel, so initial state always matches the selected section.
  *  - All inputs are controlled (value= not defaultValue=) so the form always
- *    reflects the Redux state, including after an undo or draft hydration.
+ *    reflects the Redux state, including after draft hydration.
  */
 
 import { useEffect, useState } from 'react';
@@ -31,13 +31,9 @@ export function HeroEditor({ sectionId }: HeroEditorProps) {
   const dispatch = useAppDispatch();
   const section = useAppSelector(selectDraftSectionById(sectionId));
 
-  // Parse current props — fall back to empty object if section not found
   const parsed = validate(HeroPropsSchema, section?.props ?? {});
   const current: Partial<HeroProps> = parsed.ok ? parsed.value : {};
 
-  // Local controlled state — debounced before dispatching to Redux.
-  // This prevents a Redux write + re-render on every keystroke while still
-  // keeping the preview live with a short delay.
   const [heading, setHeading] = useState(current.heading ?? '');
   const [subheading, setSubheading] = useState(current.subheading ?? '');
   const [ctaLabel, setCtaLabel] = useState(current.ctaLabel ?? '');
@@ -48,18 +44,9 @@ export function HeroEditor({ sectionId }: HeroEditorProps) {
   const debouncedCtaLabel = useDebounce(ctaLabel, 300);
   const debouncedCtaHref = useDebounce(ctaHref, 300);
 
-  // Sync local state when a different section is selected or draft is hydrated
-  useEffect(() => {
-    const p = validate(HeroPropsSchema, section?.props ?? {});
-    if (!p.ok) return;
-    setHeading(p.value.heading);
-    setSubheading(p.value.subheading ?? '');
-    setCtaLabel(p.value.ctaLabel ?? '');
-    setCtaHref(p.value.ctaHref ?? '');
-  }, [sectionId]); // eslint-disable-line react-hooks/exhaustive-deps
-  // ^ intentionally only on sectionId — we don't want to reset while typing
-
   // Dispatch debounced values to Redux
+  // Note: the component is keyed by sectionId in SectionEditorPanel so it
+  // remounts on section switch — no sync effect needed.
   useEffect(() => {
     if (!section) return;
     dispatch(

@@ -40,5 +40,7 @@ export function SectionEditorPanel({
   sectionType,
 }: SectionEditorPanelProps) {
   const Editor = editorRegistry[sectionType] ?? GenericEditor;
-  return <Editor sectionId={sectionId} />;
+  // key=sectionId forces a remount on section switch so local editor state
+  // always reflects the newly selected section without a sync effect.
+  return <Editor key={sectionId} sectionId={sectionId} />;
 }

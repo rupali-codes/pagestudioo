@@ -82,14 +82,25 @@ export function clearPersistedDraft(pageId: string): void {
  * We compare references rather than deep-equal to keep this O(1).
  * Immer always produces a new reference when state changes, so reference
  * equality is a reliable change detector here.
+ *
+ * IMPORTANT: We skip persistence on `loadDraft` because that action sets
+ * `present` to the CMS baseline, which would overwrite any previously saved
+ * draft in localStorage. The persistence layer is for user-generated edits,
+ * not for CMS data that can always be re-fetched.
  */
+const LOAD_DRAFT_TYPE = 'draftPage/loadDraft';
+
 export const persistDraftMiddleware: Middleware =
   (store) => (next) => (action) => {
     const prevDraft = (store.getState() as StateWithDraft).draftPage.present;
     const result = next(action);
     const nextDraft = (store.getState() as StateWithDraft).draftPage.present;
 
-    if (nextDraft !== prevDraft && nextDraft !== null) {
+    if (
+      nextDraft !== prevDraft &&
+      nextDraft !== null &&
+      (action as { type?: string }).type !== LOAD_DRAFT_TYPE
+    ) {
       saveDraft(nextDraft);
     }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@store/hooks';
 import { selectDraft, selectUser } from '@store/selectors';
 import {
@@ -27,6 +27,13 @@ interface PublishResponse {
  * Sends only the page to the server — version calculation, changelog, and
  * snapshot persistence all happen server-side in the publish service.
  *
+ * Uses a ref to guard against duplicate concurrent publishes. Even though
+ * `startPublish()` sets `isPublishing = true` in Redux synchronously, React
+ * 18+ batching may delay the component re-render that reads the new state,
+ * allowing a second click to bypass the `!isPublishing` check. The ref is
+ * checked before any dispatch and is set synchronously outside React's
+ * batching, preventing this race.
+ *
  * On success (new release or noop):
  *   - Adds the release to `releaseSlice` (history)
  *   - Stores it in `publishSlice` (last published)
@@ -37,17 +44,18 @@ export function usePublishDraft() {
   const dispatch = useAppDispatch();
   const draft = useAppSelector(selectDraft);
   const user = useAppSelector(selectUser);
+  const isPublishingRef = useRef(false);
 
   const publish = useCallback(async () => {
-    if (!draft || !user) return;
+    if (!draft || !user || isPublishingRef.current) return;
 
+    isPublishingRef.current = true;
     dispatch(startPublish());
 
     try {
       const response = await fetch(API_ROUTES.publish, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Send only the page — server derives version from its own snapshot store
         body: JSON.stringify({ page: draft }),
       });
 
@@ -65,6 +73,8 @@ export function usePublishDraft() {
       dispatch(
         publishFailure(e instanceof Error ? e.message : 'Publish failed'),
       );
+    } finally {
+      isPublishingRef.current = false;
     }
   }, [dispatch, draft, user]);
 

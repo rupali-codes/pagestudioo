@@ -10,7 +10,7 @@ import {
   selectUser,
   selectDraft,
 } from '@/store/selectors';
-import { resetDraft } from '@/store/slices/draftPageSlice';
+import { resetDraft, setSaving as setDraftSaving, markClean } from '@/store/slices/draftPageSlice';
 import { openDiscardDialog } from '@/store/slices/uiSlice';
 import { clearPublishError } from '@/store/slices/publishSlice';
 import { hasPermission } from '@/types/auth';
@@ -40,6 +40,14 @@ export function StudioToolbar({ pageTitle }: StudioToolbarProps) {
   const canPublish = usePermission('page:publish');
 
   void hasPermission; // imported for type safety in other files
+
+  async function handleSave() {
+    dispatch(setDraftSaving(true));
+    dispatch(markClean());
+    // Brief delay so aria-busy state is visible before the badge flips
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    dispatch(setDraftSaving(false));
+  }
 
   function handleDiscard() {
     if (isDirty) {
@@ -119,11 +127,7 @@ export function StudioToolbar({ pageTitle }: StudioToolbarProps) {
             disabled={!isDirty || isSaving}
             aria-busy={isSaving}
             aria-label="Save draft"
-            // Save is handled by the persistence middleware automatically;
-            // this button is a visual affordance + future server-save hook.
-            onClick={() => {
-              /* server save hook goes here */
-            }}
+            onClick={handleSave}
           >
             {isSaving ? 'Saving…' : 'Save draft'}
           </Button>
@@ -134,7 +138,7 @@ export function StudioToolbar({ pageTitle }: StudioToolbarProps) {
             variant="primary"
             size="sm"
             onClick={publish}
-            disabled={isDirty || isPublishing || !draft}
+            disabled={!isDirty || isPublishing || !draft}
             aria-busy={isPublishing}
             aria-label="Publish page"
             className={cn(isPublishing && 'cursor-wait')}

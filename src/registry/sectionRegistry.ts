@@ -68,3 +68,15 @@ export function getRegistryEntry(
   }
   return undefined;
 }
+
+/**
+ * Look up a human-readable display name for a section type.
+ *
+ * Centralises the single source of truth from the registry so that UI
+ * components (SectionListItem, AddSectionPanel) don't maintain their own
+ * label maps. Falls back to the raw type string for unregistered types.
+ */
+export function getSectionDisplayName(type: string): string {
+  const entry = getRegistryEntry(type);
+  return entry?.displayName ?? type;
+}

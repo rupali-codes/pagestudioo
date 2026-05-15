@@ -56,8 +56,6 @@ export async function fetchPageBySlug(
       );
     }
 
-    // `items[0]` is safe here — we just checked `length > 0`
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const entry = response.items[0]!;
     const page = mapPage(entry);
 

@@ -11,17 +11,26 @@
 
 import * as Dialog from '@radix-ui/react-dialog';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { selectIsDiscardDialogOpen } from '@/store/selectors';
+import { selectIsDiscardDialogOpen, selectDraft } from '@/store/selectors';
 import { closeDiscardDialog } from '@/store/slices/uiSlice';
 import { resetDraft } from '@/store/slices/draftPageSlice';
+import { clearPersistedDraft } from '@/store/persistMiddleware';
 import { Button } from '@/components/ui/Button';
 
 export function DiscardDialog() {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector(selectIsDiscardDialogOpen);
+  const draft = useAppSelector(selectDraft);
 
   function handleConfirm() {
+    // Reset Redux draft state to the original CMS snapshot
     dispatch(resetDraft());
+    // Clear the persisted localStorage entry so the next reload also sees
+    // a clean draft (the middleware will re-save the reset draft, but we
+    // explicitly remove it here to guarantee a fresh start).
+    if (draft) {
+      clearPersistedDraft(draft.pageId);
+    }
     dispatch(closeDiscardDialog());
   }
 

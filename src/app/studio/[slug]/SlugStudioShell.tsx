@@ -4,12 +4,15 @@
  * SlugStudioShell — the full editor UI for /studio/[slug].
  *
  * Mount sequence:
- *   1. Receives the CMS page as a prop (fetched server-side).
- *   2. Dispatches `loadDraft(page)` to set the original baseline.
- *   3. Checks localStorage for a persisted draft for this pageId.
- *   4. If a draft exists, dispatches `hydrateDraft` to restore it.
- *   5. SessionHydrator (in AppProviders) populates Redux auth from the
- *      server session cookie — no manual user seeding needed here.
+ *   1. Reads persisted draft from localStorage into a local variable FIRST.
+ *   2. Dispatches `loadDraft(page)` to set the original CMS baseline.
+ *   3. If a persisted draft exists, dispatches `hydrateDraft` to restore it.
+ *
+ * The local-variable-first approach is critical: the middleware used to
+ * overwrite localStorage during `loadDraft`, making the subsequent
+ * `loadPersistedDraft` read return the CMS baseline instead of the user's
+ * saved draft. By reading into a variable before any dispatch, the data is
+ * safe in memory regardless of middleware side effects.
  *
  * Layout: three-column
  *   ┌──────────────┬──────────────────────────┬──────────────┐
@@ -21,7 +24,11 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loadDraft, hydrateDraft } from '@/store/slices/draftPageSlice';
-import { selectDraft } from '@/store/selectors';
+import { selectDraft, selectDraftRestored } from '@/store/selectors';
+import {
+  setDraftRestored,
+  clearDraftRestored,
+} from '@/store/slices/uiSlice';
 import { loadPersistedDraft } from '@/store/persistMiddleware';
 import { PageRenderer } from '@/components/page/PageRenderer';
 import { PageErrorBoundary } from '@/components/page/PageErrorBoundary';
@@ -38,15 +45,27 @@ interface SlugStudioShellProps {
 export function SlugStudioShell({ page }: SlugStudioShellProps) {
   const dispatch = useAppDispatch();
   const draft = useAppSelector(selectDraft);
+  const draftRestored = useAppSelector(selectDraftRestored);
+
+  // Auto-dismiss "Draft restored" banner after 3 seconds
+  useEffect(() => {
+    if (!draftRestored) return;
+    const timer = setTimeout(() => dispatch(clearDraftRestored()), 3000);
+    return () => clearTimeout(timer);
+  }, [draftRestored, dispatch]);
 
   useEffect(() => {
-    // Load the CMS page as the original baseline
+    // 1. Read persisted draft into a local variable BEFORE dispatching.
+    //    This makes the data immune to middleware side effects during loadDraft.
+    const persisted = loadPersistedDraft(page.pageId);
+
+    // 2. Set the CMS baseline (present + original)
     dispatch(loadDraft(page));
 
-    // Restore any persisted draft edits from a previous session
-    const persisted = loadPersistedDraft(page.pageId);
+    // 3. Restore any persisted draft edits from a previous session
     if (persisted) {
       dispatch(hydrateDraft(persisted));
+      dispatch(setDraftRestored());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page.pageId]);
@@ -70,8 +89,33 @@ export function SlugStudioShell({ page }: SlugStudioShellProps) {
           id="main-content"
           tabIndex={-1}
           aria-label="Page preview"
-          className="flex-1 overflow-y-auto"
+          className="relative flex-1 overflow-y-auto"
         >
+          {/* "Draft restored" notification */}
+          {draftRestored && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="sticky top-0 z-40 flex items-center justify-center gap-2 bg-green-100 px-4 py-1.5 text-sm font-medium text-green-800"
+            >
+              <svg
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Draft restored
+            </div>
+          )}
+
           {draft ? (
             <PageErrorBoundary>
               <div className="min-h-full bg-white shadow-sm">

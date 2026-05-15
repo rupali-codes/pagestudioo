@@ -66,11 +66,19 @@ const draftPageSlice = createSlice({
     /**
      * Hydrate the draft from a persisted localStorage snapshot.
      * Called by the persistence middleware on mount.
+     *
+     * Only sets isDirty when the persisted content actually differs from the
+     * original CMS snapshot. A "saved" or "discarded" draft that matches the
+     * original should not appear as dirty.
      */
     hydrateDraft(state, action: PayloadAction<Page>) {
       state.present = action.payload;
-      // Keep original as-is — it was set by loadDraft before hydration
-      state.isDirty = true; // persisted draft is always "dirty" vs. CMS
+      if (state.original) {
+        state.isDirty =
+          JSON.stringify(state.present) !== JSON.stringify(state.original);
+      } else {
+        state.isDirty = true;
+      }
     },
 
     // ── Section prop editing ────────────────────────────────────────────────
