@@ -10,9 +10,9 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { buildSessionCookie, buildMockSession, SESSION_COOKIE } from '@/lib/auth/session';
+import { SESSION_COOKIE } from '@/lib/auth/constants';
+import { buildSessionCookie, buildMockSession } from '@/lib/auth/session';
 
 const SetSessionSchema = z.object({
   role: z.enum(['viewer', 'editor', 'publisher']),
@@ -37,14 +37,23 @@ export async function POST(request: NextRequest) {
   const session = buildMockSession(parsed.data.role);
   const cookie = buildSessionCookie(session);
 
-  const cookieStore = await cookies();
-  cookieStore.set(cookie.name, cookie.value, cookie.options as Parameters<typeof cookieStore.set>[2]);
+  // Set the cookie on the response directly, not via cookies().set():
+  // cookies().set() may not reliably propagate Set-Cookie headers when
+  // returning a fresh NextResponse.json() on Vercel's serverless runtime.
+  const response = NextResponse.json({ session }, { status: 200 });
+  response.cookies.set(cookie.name, cookie.value, {
+    httpOnly: cookie.options.httpOnly as boolean | undefined,
+    secure: cookie.options.secure as boolean | undefined,
+    sameSite: cookie.options.sameSite as 'lax' | 'strict' | 'none' | undefined,
+    path: cookie.options.path as string | undefined,
+    maxAge: cookie.options.maxAge as number | undefined,
+  });
 
-  return NextResponse.json({ session }, { status: 200 });
+  return response;
 }
 
 export async function DELETE() {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE);
-  return NextResponse.json({ ok: true }, { status: 200 });
+  const response = NextResponse.json({ ok: true }, { status: 200 });
+  response.cookies.delete(SESSION_COOKIE);
+  return response;
 }

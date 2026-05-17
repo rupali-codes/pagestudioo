@@ -1,13 +1,12 @@
 'use client';
 
 /**
- * RoleSwitcher — development-only widget for simulating different roles.
+ * RoleSwitcher — floating widget for simulating different roles.
  *
  * Renders a floating pill in the bottom-right corner. Clicking a role
  * calls POST /api/auth/session, updates the cookie, and refreshes the page
  * so Server Components re-render with the new session.
  *
- * Hidden in production (NODE_ENV check at render time).
  * Accessible: each role button has an aria-label and the current role is
  * indicated with aria-pressed.
  */
@@ -36,9 +35,6 @@ const ACTIVE_COLORS: Record<Role, string> = {
 };
 
 export function RoleSwitcher() {
-  // Never render in production
-  if (process.env.NODE_ENV === 'production') return null;
-
   return <RoleSwitcherInner />;
 }
 
